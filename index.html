@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Claude 2x Usage Checker</title>
-<meta name="description" content="Check if Claude's 2x usage promotion is currently active in your timezone. March 13-27, 2026.">
+<meta name="description" content="Check if Claude's 2x usage promotion is currently active in your timezone. Now through March 28, 2026.">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -14,6 +14,8 @@
     --yellow: #eab308;
     --yellow-soft: #facc15;
     --purple: #6366f1;
+    --blue: #38bdf8;
+    --blue-soft: #7dd3fc;
     --grey: #6b6b80;
     --bg: #08080d;
     --surface: rgba(255,255,255,0.03);
@@ -76,6 +78,10 @@
     background: linear-gradient(135deg, rgba(34,197,94,0.08), rgba(34,197,94,0.02));
     border: 1px solid rgba(34,197,94,0.25);
   }
+  .status-card.weekend {
+    background: linear-gradient(135deg, rgba(56,189,248,0.08), rgba(56,189,248,0.02));
+    border: 1px solid rgba(56,189,248,0.25);
+  }
   .status-card.peak {
     background: linear-gradient(135deg, rgba(234,179,8,0.08), rgba(234,179,8,0.02));
     border: 1px solid rgba(234,179,8,0.25);
@@ -94,6 +100,27 @@
   .status-label {
     display: inline-flex; align-items: center;
     margin-top: 12px; font-size: 13px; font-weight: 500;
+  }
+
+  .day-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 10px;
+  }
+  .day-badge.weekend-badge {
+    background: rgba(56,189,248,0.12);
+    color: var(--blue-soft);
+    border: 1px solid rgba(56,189,248,0.2);
+  }
+  .day-badge.weekday-badge {
+    background: rgba(255,255,255,0.05);
+    color: var(--text-dim);
+    border: 1px solid rgba(255,255,255,0.08);
   }
 
   .pulse-wrap {
@@ -151,6 +178,9 @@
     font-family: var(--sans);
   }
   .peak-note { font-size: 12px; color: var(--grey); margin-top: 6px; }
+  .peak-weekend-note {
+    font-size: 12px; color: var(--blue); margin-top: 8px;
+  }
 
   .timeline-header {
     display: flex; justify-content: space-between;
@@ -168,6 +198,32 @@
   .track-labels {
     display: flex; justify-content: space-between;
     font-size: 11px; color: #555; margin-top: 6px;
+  }
+
+  .rule-card {
+    display: flex; gap: 12px; margin-top: 8px;
+  }
+  .rule {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .rule-weekend {
+    background: rgba(56,189,248,0.06);
+    border: 1px solid rgba(56,189,248,0.12);
+    color: var(--blue-soft);
+  }
+  .rule-weekday {
+    background: rgba(34,197,94,0.06);
+    border: 1px solid rgba(34,197,94,0.12);
+    color: var(--green-soft);
+  }
+  .rule strong {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 2px;
   }
 
   .footer {
@@ -195,7 +251,7 @@
   <div class="header">
     <div class="header-tag">Claude &middot; March 2026</div>
     <h1>2&times; Usage Promotion</h1>
-    <div class="header-sub">Mar 13 &ndash; Mar 27, 2026 &middot; Free, Pro, Max &amp; Team plans</div>
+    <div class="header-sub">Now through March 28, 2026 &middot; Free, Pro, Max &amp; Team plans</div>
   </div>
 
   <div class="status-card" id="statusCard">
@@ -207,6 +263,7 @@
       </span>
       <span id="statusText">Loading...</span>
     </div>
+    <div id="dayBadge"></div>
     <div class="countdown-row" id="countdownRow" style="display:none">
       <span id="countdownLabel"></span>
       <span class="time" id="countdownTime"></span>
@@ -223,9 +280,24 @@
   </div>
 
   <div class="card">
-    <div class="card-label">Peak hours (1&times; usage) in your timezone</div>
+    <div class="card-label">How it works</div>
+    <div class="rule-card">
+      <div class="rule rule-weekend">
+        <strong>Weekends</strong>
+        2&times; usage all day
+      </div>
+      <div class="rule rule-weekday">
+        <strong>Weekdays</strong>
+        2&times; outside peak hours
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Weekday peak hours (1&times;) in your timezone</div>
     <div class="peak-range" id="peakRange"></div>
-    <div class="peak-note">= 8:00 AM &ndash; 2:00 PM Eastern Time</div>
+    <div class="peak-note">= 5:00 AM &ndash; 11:00 AM Pacific / 12:00 PM &ndash; 6:00 PM GMT</div>
+    <div class="peak-weekend-note" id="weekendNote"></div>
   </div>
 
   <div class="card" id="timelineCard">
@@ -234,7 +306,7 @@
       <span id="daysLeft"></span>
     </div>
     <div class="track"><div class="track-fill" id="trackFill"></div></div>
-    <div class="track-labels"><span>Mar 13</span><span>Mar 27</span></div>
+    <div class="track-labels"><span>Mar 13</span><span>Mar 28</span></div>
   </div>
 
   <div class="footer">
@@ -280,8 +352,8 @@ var TIMEZONES = [
   ["Nairobi (EAT)", "Africa/Nairobi"]
 ];
 
-var PROMO_START = new Date("2026-03-13T00:00:00-05:00");
-var PROMO_END = new Date("2026-03-27T23:59:59-07:00");
+var PROMO_START = new Date("2026-03-13T00:00:00-08:00");
+var PROMO_END = new Date("2026-03-28T23:59:59-07:00");
 
 var $select = document.getElementById("tzSelect");
 var $statusCard = document.getElementById("statusCard");
@@ -289,12 +361,14 @@ var $multiplier = document.getElementById("multiplier");
 var $statusText = document.getElementById("statusText");
 var $pulseRing = document.getElementById("pulseRing");
 var $pulseDot = document.getElementById("pulseDot");
+var $dayBadge = document.getElementById("dayBadge");
 var $countdownRow = document.getElementById("countdownRow");
 var $countdownLbl = document.getElementById("countdownLabel");
 var $countdownTm = document.getElementById("countdownTime");
 var $tzDate = document.getElementById("tzDate");
 var $tzClock = document.getElementById("tzClock");
 var $peakRange = document.getElementById("peakRange");
+var $weekendNote = document.getElementById("weekendNote");
 var $daysLeft = document.getElementById("daysLeft");
 var $trackFill = document.getElementById("trackFill");
 var $timelineCard = document.getElementById("timelineCard");
@@ -321,10 +395,7 @@ var TZ_ALIASES = {
 function initSelect() {
   var localTZ = "";
   try { localTZ = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch(e) {}
-
-  // Resolve aliases
   if (TZ_ALIASES[localTZ]) { localTZ = TZ_ALIASES[localTZ]; }
-
   var matched = false;
 
   for (var i = 0; i < TIMEZONES.length; i++) {
@@ -338,7 +409,6 @@ function initSelect() {
     $select.appendChild(opt);
   }
 
-  // If browser TZ not in list, add it directly
   if (!matched && localTZ) {
     var city = localTZ.split("/").pop().replace(/_/g, " ");
     var opt = document.createElement("option");
@@ -352,48 +422,81 @@ function initSelect() {
   if (!matched) { $select.value = "America/New_York"; }
 }
 
-function getETHour() {
+function getPTInfo() {
   try {
-    return parseInt(new Date().toLocaleString("en-US", {
-      timeZone: "America/New_York", hour: "numeric", hour12: false
+    var now = new Date();
+    var ptHour = parseInt(now.toLocaleString("en-US", {
+      timeZone: "America/Los_Angeles", hour: "numeric", hour12: false
     }), 10);
-  } catch(e) { return 12; }
+    var ptDayStr = now.toLocaleString("en-US", {
+      timeZone: "America/Los_Angeles", weekday: "short"
+    });
+    var isWeekend = (ptDayStr === "Sat" || ptDayStr === "Sun");
+    var isPeakHour = (ptHour >= 5 && ptHour < 11);
+    return { hour: ptHour, isWeekend: isWeekend, isPeakHour: isPeakHour, dayStr: ptDayStr };
+  } catch(e) {
+    return { hour: 12, isWeekend: false, isPeakHour: false, dayStr: "?" };
+  }
 }
 
-function isPeak() { var h = getETHour(); return h >= 8 && h < 14; }
 function isPromo() { var n = new Date(); return n >= PROMO_START && n <= PROMO_END; }
 
 function getCountdown() {
   var now = new Date();
-  var h = getETHour();
-  var etNow = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  var pt = getPTInfo();
+  var ptNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+  var DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  var todayDow = DOW.indexOf(pt.dayStr);
 
   var target;
-  if (h >= 8 && h < 14) {
-    target = new Date(etNow); target.setHours(14, 0, 0, 0);
-  } else if (h < 8) {
-    target = new Date(etNow); target.setHours(8, 0, 0, 0);
-  } else {
-    target = new Date(etNow);
-    target.setDate(target.getDate() + 1);
-    target.setHours(8, 0, 0, 0);
+
+  if (pt.isWeekend) {
+    var daysUntilMon = (todayDow === 6) ? 2 : 1;
+    target = new Date(ptNow);
+    target.setDate(target.getDate() + daysUntilMon);
+    target.setHours(5, 0, 0, 0);
+    return { diff: target - ptNow, label: "All-day 2\u00d7 \u2014 peak resumes" };
   }
 
-  var diff = target - etNow;
-  return {
-    hours: Math.floor(diff / 3600000),
-    minutes: Math.floor((diff % 3600000) / 60000),
-    seconds: Math.floor((diff % 60000) / 1000)
-  };
+  if (pt.isPeakHour) {
+    target = new Date(ptNow);
+    target.setHours(11, 0, 0, 0);
+    return { diff: target - ptNow, label: "2\u00d7 resumes in" };
+  }
+
+  if (pt.hour < 5) {
+    target = new Date(ptNow);
+    target.setHours(5, 0, 0, 0);
+    return { diff: target - ptNow, label: "Peak starts in" };
+  }
+
+  // After 11am weekday
+  target = new Date(ptNow);
+  target.setDate(target.getDate() + 1);
+  var tmrDow = (todayDow + 1) % 7;
+  if (tmrDow === 0 || tmrDow === 6) {
+    target.setHours(0, 0, 0, 0);
+    return { diff: target - ptNow, label: "Weekend 2\u00d7 starts in" };
+  }
+  target.setHours(5, 0, 0, 0);
+  return { diff: target - ptNow, label: "Peak starts in" };
+}
+
+function formatCountdown(ms) {
+  if (ms < 0) ms = 0;
+  var h = Math.floor(ms / 3600000);
+  var m = Math.floor((ms % 3600000) / 60000);
+  var s = Math.floor((ms % 60000) / 1000);
+  return h + "h " + m + "m " + s + "s";
 }
 
 function getPeakInTZ(tz) {
   try {
-    var etNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
-    var peakStart = new Date(etNow); peakStart.setHours(8, 0, 0, 0);
-    var peakEnd = new Date(etNow); peakEnd.setHours(14, 0, 0, 0);
+    var ptNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+    var peakStart = new Date(ptNow); peakStart.setHours(5, 0, 0, 0);
+    var peakEnd = new Date(ptNow); peakEnd.setHours(11, 0, 0, 0);
 
-    var offset = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" })) - new Date();
+    var offset = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" })) - new Date();
     var utcStart = new Date(peakStart.getTime() - offset);
     var utcEnd = new Date(peakEnd.getTime() - offset);
 
@@ -411,7 +514,15 @@ function getPeakInTZ(tz) {
 
     return sd === ed ? s + " \u2013 " + e : s + " (" + sd + ") \u2013 " + e + " (" + ed + ")";
   } catch(err) {
-    return "8:00 AM \u2013 2:00 PM ET";
+    return "5:00 AM \u2013 11:00 AM PT";
+  }
+}
+
+function getDayInTZ(tz) {
+  try {
+    return new Date().toLocaleString("en-US", { timeZone: tz, weekday: "short" });
+  } catch(e) {
+    return "?";
   }
 }
 
@@ -420,26 +531,60 @@ function update() {
   if (!tz) return;
 
   var promo = isPromo();
-  var peak = isPeak();
-  var active = promo && !peak;
+  var pt = getPTInfo();
+  var isWeekend = pt.isWeekend;
+  var isPeakNow = !isWeekend && pt.isPeakHour;
+  var is2x = promo && (isWeekend || !pt.isPeakHour);
 
-  $statusCard.className = "status-card " + (active ? "active" : promo ? "peak" : "ended");
+  var cardClass = "ended";
+  if (promo) {
+    if (isWeekend) cardClass = "weekend";
+    else if (is2x) cardClass = "active";
+    else cardClass = "peak";
+  }
+  $statusCard.className = "status-card " + cardClass;
 
-  var color = active ? "var(--green)" : promo ? "var(--yellow)" : "#555";
-  var softColor = active ? "var(--green-soft)" : promo ? "var(--yellow-soft)" : "#777";
+  var color, softColor;
+  if (!promo) {
+    color = "#555"; softColor = "#777";
+  } else if (isWeekend) {
+    color = "var(--blue)"; softColor = "var(--blue-soft)";
+  } else if (is2x) {
+    color = "var(--green)"; softColor = "var(--green-soft)";
+  } else {
+    color = "var(--yellow)"; softColor = "var(--yellow-soft)";
+  }
 
-  $multiplier.textContent = active ? "2\u00d7" : "1\u00d7";
+  $multiplier.textContent = is2x ? "2\u00d7" : "1\u00d7";
   $multiplier.style.color = color;
   $pulseRing.style.background = color;
   $pulseDot.style.background = color;
   $statusText.style.color = softColor;
-  $statusText.textContent = !promo ? "Promotion has ended" : active ? "Double usage is ACTIVE" : "Peak hours \u2014 standard usage";
+
+  if (!promo) {
+    $statusText.textContent = "Promotion has ended";
+  } else if (isWeekend) {
+    $statusText.textContent = "Weekend \u2014 2\u00d7 all day!";
+  } else if (is2x) {
+    $statusText.textContent = "Off-peak \u2014 2\u00d7 usage is ACTIVE";
+  } else {
+    $statusText.textContent = "Weekday peak hours \u2014 standard usage";
+  }
+
+  var userDay = getDayInTZ(tz);
+  var userIsWeekend = (userDay === "Sat" || userDay === "Sun");
+  if (promo) {
+    $dayBadge.innerHTML = '<span class="day-badge ' + (userIsWeekend ? 'weekend-badge' : 'weekday-badge') + '">' +
+      (userIsWeekend ? '\u2728 Weekend' : userDay) + '</span>';
+  } else {
+    $dayBadge.innerHTML = '';
+  }
 
   if (promo) {
     $countdownRow.style.display = "flex";
     var cd = getCountdown();
-    $countdownLbl.textContent = peak ? "2\u00d7 resumes in" : "Peak starts in";
-    $countdownTm.textContent = cd.hours + "h " + cd.minutes + "m " + cd.seconds + "s";
+    $countdownLbl.textContent = cd.label;
+    $countdownTm.textContent = formatCountdown(cd.diff);
   } else {
     $countdownRow.style.display = "none";
   }
@@ -457,6 +602,9 @@ function update() {
   }
 
   $peakRange.textContent = getPeakInTZ(tz);
+  $weekendNote.textContent = userIsWeekend
+    ? "\u2728 Weekends are 2\u00d7 all day \u2014 no peak hours!"
+    : "Weekdays only. Weekends are 2\u00d7 all day!";
 
   if (promo) {
     $timelineCard.style.display = "";
